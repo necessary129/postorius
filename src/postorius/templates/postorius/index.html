@@ -20,6 +20,26 @@
             {% endif %}
         </p>
     {% endif %}
+                <div id="list-form">
+                    <div id="heading">
+                        <h4> {% trans 'Filter' %}</h4>
+                    </div>
+                    <form action="" method="get">
+                    {% for field in form %}
+                        <div class="form-group">
+                        {{ field.errors }}
+                        {{ field.label_tag }} {{ field }}
+                        {% if field.help_text %}
+                            <p class="help">{{ field.help_text|safe }}</p>
+                        {% endif %}
+    </div>
+{% endfor %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                            {% trans 'Apply' %}
+                        </button>
+                    </form>
+                    <br>
+                </div>
     {% if lists|length > 0 %}
         <div class="table-responsive">
             <table class="table table-bordered table-striped">
@@ -35,7 +55,7 @@
                         <tr>
                             <td>
                                 <a href="{% url 'list_summary' list_id=list.list_id %}">{{ list.display_name }}</a>
-                                {% if not list.settings.advertised %} ({% trans 'unadvertised' %}*){% endif %}
+                                {% if user.is_superuser and not list.settings.advertised %} ({% trans 'unadvertised' %}*){% endif %}
                             </td>
                             <td>{{ list.fqdn_listname }}</td>
                             <td>{{ list.settings.description }}</td>
@@ -52,4 +72,4 @@
         <p>{% trans 'There are currently no mailing lists.' %}</p>
     {% endif %}
 
-{% endblock main %}
+{% endblock %}

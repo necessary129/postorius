@@ -872,3 +872,21 @@ class MultipleChoiceForm(forms.Form):
         if len(self.cleaned_data['choices']) < 1:
             raise forms.ValidationError(_('Make at least one selection'))
         return self.cleaned_data['choices']
+
+class ListFilterForm(forms.Form):
+    name = forms.CharField(
+        label = "List Name",
+        required=False
+        )
+    def __init__(self, domain_choices, *args, **kwargs):
+        super(ListFilterForm, self).__init__(*args, **kwargs)
+        self.fields["mail_host"] = forms.MultipleChoiceField(
+            label=_('Mail Host'),
+            choices=domain_choices,
+            required=False
+            )
+        if len(domain_choices) < 2:
+            self.fields["mail_host"].help_text = _(
+                "Site admin has not created any domains")
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'

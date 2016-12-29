@@ -42,7 +42,7 @@ from postorius.forms import (
     ListSubscriptionPolicyForm, ArchiveSettingsForm, MessageAcceptanceForm,
     DigestSettingsForm, AlterMessagesForm, ListAutomaticResponsesForm,
     ListIdentityForm, ListMassSubscription, ListMassRemoval, ListAddBanForm,
-    ListHeaderMatchForm, ListHeaderMatchFormset, MemberModeration)
+    ListHeaderMatchForm, ListHeaderMatchFormset, MemberModeration, ListFilterForm)
 from postorius.models import Domain, List, MailmanApiError, Mailman404Error
 from postorius.auth.decorators import (
     list_owner_required, list_moderator_required)
@@ -537,18 +537,32 @@ def list_index(request, template='postorius/index.html'):
     only_public = True
     if request.user.is_superuser:
         only_public = False
+    choosable_domains = _get_choosable_domains(request)
+
+    form = ListFilterForm(choosable_domains, request.GET)
+    form.is_valid()
     try:
-        lists = sorted(List.objects.all(only_public=only_public),
-                       key=lambda l: l.fqdn_listname)
-        logger.debug(lists)
+        if form.cleaned_data['mail_host']:
+            dlists = []
+            for host in form.cleaned_data['mail_host']:
+                dlists += List.objects.by_mail_host(host, only_public=only_public)
+        else:
+             dlists = List.objects.all(only_public=only_public)
+        lists = []
+        if form.cleaned_data['name']:
+            for dlist in dlists:
+                if form.cleaned_data['name'].lower() in dlist.display_name.lower():
+                    lists.append(dlist)
+        else:
+            lists = dlists
     except MailmanApiError:
         return utils.render_api_error(request)
-    choosable_domains = _get_choosable_domains(request)
     return render(request, template,
                   {'count_options': [10, 25, 50, 100, 200], 'error': error,
                    'lists': utils.paginate(request, lists,
                                            count=request.GET.get('count', 10)),
-                   'domain_count': len(choosable_domains)})
+                   'domain_count': len(choosable_domains),
+                   'form': form})
 
 
 @login_required
